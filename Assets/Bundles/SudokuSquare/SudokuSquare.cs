@@ -15,10 +15,13 @@ public class SudokuSquare : MonoBehaviour
         } 
     }
 
+    private MaterialChangeOnHighlight highlighter;
+
     private void Start()
     {
         UpdateIndexText();
         Debug.Log($"{textMesh}");
+        highlighter = GetComponent<MaterialChangeOnHighlight>();
     }
 
     // Update is called once per frame
@@ -55,5 +58,15 @@ public class SudokuSquare : MonoBehaviour
     public static string LabelFromPosition(Vector2Int pos)
     {
         return $"{(char)('A' + pos.y)}{pos.x + 1}";
+    }
+
+    public void Select()
+    {
+        highlighter.OnSelect();
+    }
+
+    public void Deselect()
+    {
+        highlighter.OnDeselect();
     }
 }

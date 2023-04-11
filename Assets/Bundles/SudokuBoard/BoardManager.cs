@@ -51,7 +51,12 @@ public class BoardManager : MonoBehaviour
 
     public void SetActiveSquare(SudokuSquare square)
     {
+        if(activeSquare != null)
+        {
+            activeSquare.Deselect();
+        }        
         activeSquare = square;
+        activeSquare.Select();
     }
 
     public void SetActiveSquareNumber(int number)
