@@ -9,8 +9,13 @@ namespace Sudoku
     {
         readonly List<List<Square>> squares = new List<List<Square>>();
         readonly List<Region> regions = new List<Region>();
+        readonly List<Region> columns = new List<Region>();
+        readonly List<Region> rows = new List<Region>();
+
         readonly bool numbersPreloaded = false;
         readonly List<List<int>> prenumbers;
+
+        public List<List<Square>> Squares => squares;
 
         public Game()
         {
@@ -50,9 +55,20 @@ namespace Sudoku
                     regions[square.RegionIndex].AddSquare(square);
                     
                 }
-                squares.Add(row);
+                rows.Add(new Region(row));
+                Squares.Add(row);
             }
             
+            // Set up Columns for convenience later
+            for(int i = 0; i < boardSize; i++)
+            {
+                List<Square> column = new List<Square>();
+                foreach (List<Square> row in Squares)
+                {
+                    column.Add(row[i]);
+                }                
+                columns.Add(new Region(column));
+            }
             // Console.WriteLine(this);
         }
 
@@ -64,30 +80,26 @@ namespace Sudoku
         public override string ToString()
         {
             string output = "";
-            IEnumerable<string> yLabels = from square in squares[0] select Square.YLabel(square.Index.y);
-            IEnumerable<string> underLabels = from square in squares[0] select "-";
+            IEnumerable<string> yLabels = from square in Squares[0] select Square.YLabel(square.Index.y);
+            IEnumerable<string> underLabels = from square in Squares[0] select "-";
             output += $"  | {String.Join(" ", yLabels)}";
             output += $"\n--+-{String.Join("-", underLabels)}";
-            for (int i = 0; i < squares.Count; i++)
+            for (int i = 0; i < Squares.Count; i++)
             {
-                List<Square> row = squares[i];
+                List<Square> row = Squares[i];
                 output += $"\n{Square.XLabel(i)} | {String.Join(" ", row)}";
-            }
-            foreach (List<Square> row in squares)
-            {
-                
             }
             return output;
         }
 
         public Square GetSquare(Position pos)
         {
-            return squares[pos.x][pos.y];
+            return Squares[pos.x][pos.y];
         }
 
         public Square GetSquare(int x, int y)
         {
-            return squares[x][y];
+            return Squares[x][y];
         }
 
         public int GetNumber(Position pos)
@@ -95,130 +107,19 @@ namespace Sudoku
             return GetSquare(pos).Number;
         }
 
-        public bool IsNumberInRow(int row, int number)
+        public void SetNumber(int x, int y, int number)
         {
-            foreach (Square square in squares[row])
-            {
-                if(square.Number == number)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        public bool IsNumberInColumn(int column, int number)
-        {
-            foreach(Square square in GetColumn(column))
-            {
-                if (square.Number == number) {
-                    return true;
-                }
-            }
-            return false;
+            GetSquare(x, y).Number = number;            
         }
 
         public List<Square> GetRow(int row)
         {
-            return squares[row];
+            return Squares[row];
         }
 
         public List<Square> GetColumn(int colIndex)
         {
-            List<Square> column = new List<Square>();
-            foreach(List<Square> row in squares)
-            {
-                column.Add(row[colIndex]);
-            }
-            return column;
-        }
-
-        public bool IsColumnValid(int colIndex, out List<Position> invalidPositions)
-        {
-            return IsSquareCollectionValid(GetColumn(colIndex), out invalidPositions);
-        }
-
-        public bool IsRowValid(int rowIndex, out List<Position> invalidPositions)
-        {
-            return IsSquareCollectionValid(GetRow(rowIndex), out invalidPositions);
-        }
-
-        public bool IsRegionValid(int regionIndex, out List<Position> invalidPositions)
-        {
-            return IsSquareCollectionValid(GetRegion(regionIndex).Squares, out invalidPositions);
-        }
-
-        public bool IsSquareCollectionValid(List<Square> squaresToTest, out List<Position> invalidPositions)
-        {
-            invalidPositions = new List<Position>();
-            HashSet<int> numbers = new HashSet<int>();
-
-            foreach (Square square in squaresToTest)
-            {
-                if (numbers.Contains(square.Number))
-                {
-                    invalidPositions.Add(square.Index);
-                    return false;
-                }
-                else
-                {
-                    numbers.Add(square.Number);
-                }
-            }
-            return true;
-        }
-
-        public bool IsGameValid(out HashSet<Position> invalidPositions)
-        {
-            invalidPositions = new HashSet<Position>();
-            // check the rows
-            for(int i = 0; i < squares.Count; i++)
-            {
-                IsRowValid(i, out List<Position> invalids);
-                invalidPositions.UnionWith(invalids);
-
-                IsColumnValid(i, out invalids);
-                invalidPositions.UnionWith(invalids);
-
-                IsRegionValid(i, out invalids);
-                invalidPositions.UnionWith(invalids);
-            }
-
-            return invalidPositions.Count == 0;
-        }
-
-        public bool IsNumberInRegion(int region, int number)
-        {
-            return GetRegion(region).IsNumberInRegion(number);
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="x"></param>
-        /// <param name="y"></param>
-        /// <param name="number"></param>
-        /// <returns><c>true</c> if the square is empty and the number can be placed there</returns>
-        public bool ValidateNumberForSquare(int x, int y, int number)
-        {
-            Square square = GetSquare(x, y);
-            if(square.Number > 0)
-            {
-                return false;
-            }
-            return !IsNumberInRow(x, number) && !IsNumberInColumn(y, number) && !IsNumberInRegion(GetSquare(x, y).RegionIndex, number);
-        }
-
-        public void SetNumber(int x, int y, int number)
-        {
-            if(ValidateNumberForSquare(x, y, number))
-            {
-                GetSquare(x, y).Number = number;
-            } else
-            {
-                Console.WriteLine($"That number isn't valid at position {Square.LabelFromPosition(x, y)}");
-            }
-            
+            return columns[colIndex].Squares;
         }
 
         public static void Main()
@@ -349,5 +250,163 @@ namespace Sudoku
         {
             return Square.LabelFromPosition(this);
         }
+    }
+
+    public class Solver
+    {
+        private Game game;
+
+        public Solver(Game gameToSolve)
+        {
+            Game = gameToSolve;
+        }
+
+
+        public bool IsColumnValid(int colIndex, out List<Position> invalidPositions)
+        {
+            return IsSquareCollectionValid(game.GetColumn(colIndex), out invalidPositions);
+        }
+
+        public bool IsRowValid(int rowIndex, out List<Position> invalidPositions)
+        {
+            return IsSquareCollectionValid(game.GetRow(rowIndex), out invalidPositions);
+        }
+
+        public bool IsRegionValid(int regionIndex, out List<Position> invalidPositions)
+        {
+            return IsSquareCollectionValid(game.GetRegion(regionIndex).Squares, out invalidPositions);
+        }
+
+        public bool IsSquareCollectionValid(List<Square> squaresToTest, out List<Position> invalidPositions)
+        {
+            invalidPositions = new List<Position>();
+            HashSet<int> numbers = new HashSet<int>();
+
+            foreach (Square square in squaresToTest)
+            {
+                if (numbers.Contains(square.Number))
+                {
+                    invalidPositions.Add(square.Index);
+                    return false;
+                }
+                else
+                {
+                    numbers.Add(square.Number);
+                }
+            }
+            return true;
+        }
+
+        public bool IsGameValid(out HashSet<Position> invalidPositions)
+        {
+            invalidPositions = new HashSet<Position>();
+            // check the rows
+            for (int i = 0; i < game.Squares.Count; i++)
+            {
+                IsRowValid(i, out List<Position> invalids);
+                invalidPositions.UnionWith(invalids);
+
+                IsColumnValid(i, out invalids);
+                invalidPositions.UnionWith(invalids);
+
+                IsRegionValid(i, out invalids);
+                invalidPositions.UnionWith(invalids);
+            }
+
+            return invalidPositions.Count == 0;
+        }
+
+        public bool IsNumberInRegion(int region, int number)
+        {
+            return game.GetRegion(region).IsNumberInRegion(number);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="number"></param>
+        /// <returns><c>true</c> if the square is empty and the number can be placed there</returns>
+        public bool ValidateNumberForSquare(int x, int y, int number)
+        {
+            Square square = game.GetSquare(x, y);
+            if (square.Number > 0)
+            {
+                return false;
+            }
+            return !IsNumberInRow(x, number) 
+                && !IsNumberInColumn(y, number) 
+                && !IsNumberInRegion(game.GetSquare(x, y).RegionIndex, number);
+        }
+
+        public void SetNumber(int x, int y, int number)
+        {
+            if (ValidateNumberForSquare(x, y, number))
+            {
+                game.GetSquare(x, y).Number = number;
+            }
+            else
+            {
+                Console.WriteLine($"That number isn't valid at position {Square.LabelFromPosition(x, y)}");
+            }
+
+        }
+
+        public bool IsNumberInRow(int row, int number)
+        {
+            foreach (Square square in game.GetRow(row))
+            {
+                if (square.Number == number)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public bool IsNumberInColumn(int column, int number)
+        {
+            foreach (Square square in game.GetColumn(column))
+            {
+                if (square.Number == number)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public IEnumerable<int> GetAllowedNumbersForSquare(int row, int col)
+        {
+            HashSet<int> allowedByRow = new HashSet<int>();
+            HashSet<int> allowedByColumn = new HashSet<int>();
+            HashSet<int> allowedByRegion = new HashSet<int>();
+
+            int regionIndex = game.GetSquare(row, col).RegionIndex;
+            // strategy 1 - allowed by row
+            for (int number = 0; number < game.Squares.Count; number++)
+            {
+                if(!IsNumberInRow(row, number))
+                {
+                    allowedByRow.Add(number);
+                }
+
+                if (!IsNumberInColumn(col, number))
+                {
+                    allowedByColumn.Add(number);
+                }
+
+                if (!IsNumberInRegion(regionIndex, number))
+                {
+                    allowedByRegion.Add(number);
+                }
+            }
+            return allowedByRow.Intersect(allowedByColumn).Intersect(allowedByRegion);
+
+            throw new NotImplementedException();
+        }
+
+        public Game Game { get => game; set => game = value; }
     }
 }

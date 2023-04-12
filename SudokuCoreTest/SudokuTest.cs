@@ -42,6 +42,9 @@ namespace SudokuUnitTest
         {
             Game game = new Game();
             game.BuildBoard();
+
+            Solver solver = new Solver(game);
+
             game.SetNumber(0, 0, 3);
             game.SetNumber(0, 1, 4);
             game.SetNumber(0, 2, 5);
@@ -49,11 +52,11 @@ namespace SudokuUnitTest
 
             Console.WriteLine(game.ToString());
 
-            Assert.IsFalse(game.ValidateNumberForSquare(3, 0, 3));
-            Assert.IsFalse(game.ValidateNumberForSquare(0, 3, 3));
-            Assert.IsFalse(game.ValidateNumberForSquare(0, 0, 6));
-            Assert.IsTrue(game.ValidateNumberForSquare(1, 1, 6));
-            Assert.IsTrue(game.ValidateNumberForSquare(3, 4, 3));
+            Assert.IsFalse(solver.ValidateNumberForSquare(3, 0, 3));
+            Assert.IsFalse(solver.ValidateNumberForSquare(0, 3, 3));
+            Assert.IsFalse(solver.ValidateNumberForSquare(0, 0, 6));
+            Assert.IsTrue(solver.ValidateNumberForSquare(1, 1, 6));
+            Assert.IsTrue(solver.ValidateNumberForSquare(3, 4, 3));
         }
 
         [TestMethod]
@@ -73,8 +76,11 @@ namespace SudokuUnitTest
 
             Game game = new Game(numbers);
             game.BuildBoard();
+
+            Solver solver = new Solver(game);
+
             Console.WriteLine(game.ToString());
-            bool isGameValid = game.IsGameValid(out HashSet<Position> invalids);
+            bool isGameValid = solver.IsGameValid(out HashSet<Position> invalids);
             Console.WriteLine(String.Join("\n", invalids));
             Assert.IsTrue(isGameValid);                        
         }
@@ -96,13 +102,36 @@ namespace SudokuUnitTest
 
             Game game = new Game(numbers);
             game.BuildBoard();
+
+            Solver solver = new Solver(game);
+
             Console.WriteLine(game.ToString());
-            bool isGameValid = game.IsGameValid(out HashSet<Position> invalids);
+            bool isGameValid = solver.IsGameValid(out HashSet<Position> invalids);
             Console.WriteLine(String.Join("\n", invalids));
             Assert.IsFalse(isGameValid);
             Assert.IsTrue(invalids.Count == 1);
 
             Assert.AreEqual("D5", Square.LabelFromPosition(invalids.ToArray()[0]));
+        }
+
+        [TestMethod]
+        public void TestAllowedNumbersForSquare()
+        {
+            Game game = new Game();
+            game.BuildBoard();
+
+            Solver solver = new Solver(game);
+
+            game.SetNumber(0, 0, 3);
+            game.SetNumber(0, 1, 4);
+            game.SetNumber(0, 2, 5);
+            game.SetNumber(3, 3, 6);
+
+            Console.WriteLine(game.ToString());
+
+            IEnumerable<int> allowedNumbers = solver.GetAllowedNumbersForSquare(0, 3);
+            Assert.IsTrue(allowedNumbers.Contains(2));
+            Assert.IsFalse(allowedNumbers.Contains(3));
         }
     }
 }
