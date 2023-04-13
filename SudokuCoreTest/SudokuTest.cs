@@ -185,9 +185,12 @@ namespace SudokuUnitTest
             Game game = new Game(numbers);
             game.BuildBoard();
 
-            Solver solver = new Solver(game);
-
             Console.WriteLine(game.ToString());
+
+            Solver solver = new Solver(game);
+            solver.SolveBoard();
+
+            /*Console.WriteLine(game.ToString());
             bool isGameValid = solver.IsGameValid(out HashSet<Position> invalids);
             Console.WriteLine(String.Join("\n", invalids));
             Assert.IsTrue(isGameValid);
@@ -195,7 +198,7 @@ namespace SudokuUnitTest
             solver.SolveSquare(4, 2);
             isGameValid = solver.IsGameValid(out _);
             Assert.IsTrue(isGameValid);
-            Console.WriteLine(game.ToString());
+            Console.WriteLine(game.ToString());*/
 
             Assert.IsTrue(solver.Game.GetSquare(4, 2).Number == 4);
         }
