@@ -262,54 +262,59 @@ namespace Sudoku
         }
 
 
-        public bool IsColumnValid(int colIndex, out List<Position> invalidPositions)
+        public bool IsColumnValid(int colIndex, out IEnumerable<Position> invalidPositions, bool requireComplete = false)
         {
             return IsSquareCollectionValid(game.GetColumn(colIndex), out invalidPositions);
         }
 
-        public bool IsRowValid(int rowIndex, out List<Position> invalidPositions)
+        public bool IsRowValid(int rowIndex, out IEnumerable<Position> invalidPositions, bool requireComplete = false)
         {
             return IsSquareCollectionValid(game.GetRow(rowIndex), out invalidPositions);
         }
 
-        public bool IsRegionValid(int regionIndex, out List<Position> invalidPositions)
+        public bool IsRegionValid(int regionIndex, out IEnumerable<Position> invalidPositions, bool requireComplete = false)
         {
             return IsSquareCollectionValid(game.GetRegion(regionIndex).Squares, out invalidPositions);
         }
 
-        public bool IsSquareCollectionValid(List<Square> squaresToTest, out List<Position> invalidPositions)
+        public bool IsSquareCollectionValid(List<Square> squaresToTest, out IEnumerable<Position> invalidPositions, bool requireComplete = false)
         {
-            invalidPositions = new List<Position>();
-            HashSet<int> numbers = new HashSet<int>();
+            var invalids = new HashSet<Position>();
+            var numbers = new HashSet<int>();
 
             foreach (Square square in squaresToTest)
             {
-                if (numbers.Contains(square.Number))
+                if(!requireComplete && square.Number == 0)
                 {
-                    invalidPositions.Add(square.Index);
-                    return false;
+                    continue;
+                }
+
+                if (numbers.Contains(square.Number))
+                {                    
+                    invalids.Add(square.Index);                    
                 }
                 else
                 {
                     numbers.Add(square.Number);
                 }
             }
-            return true;
+            invalidPositions = invalids;
+            return invalids.Count == 0;
         }
 
-        public bool IsGameValid(out HashSet<Position> invalidPositions)
+        public bool IsGameValid(out HashSet<Position> invalidPositions, bool requireComplete = false)
         {
             invalidPositions = new HashSet<Position>();
             // check the rows
             for (int i = 0; i < game.Squares.Count; i++)
             {
-                IsRowValid(i, out List<Position> invalids);
+                IsRowValid(i, out IEnumerable<Position> invalids, requireComplete);
                 invalidPositions.UnionWith(invalids);
 
-                IsColumnValid(i, out invalids);
+                IsColumnValid(i, out invalids, requireComplete);
                 invalidPositions.UnionWith(invalids);
 
-                IsRegionValid(i, out invalids);
+                IsRegionValid(i, out invalids, requireComplete);
                 invalidPositions.UnionWith(invalids);
             }
 
@@ -377,15 +382,16 @@ namespace Sudoku
             return false;
         }
 
-        public IEnumerable<int> GetAllowedNumbersForSquare(int row, int col)
+        public HashSet<int> GetAllowedNumbersForSquare(int row, int col)
         {
+            HashSet<int> allowed = new HashSet<int>();
             HashSet<int> allowedByRow = new HashSet<int>();
             HashSet<int> allowedByColumn = new HashSet<int>();
             HashSet<int> allowedByRegion = new HashSet<int>();
 
             int regionIndex = game.GetSquare(row, col).RegionIndex;
             // strategy 1 - allowed by row
-            for (int number = 0; number < game.Squares.Count; number++)
+            for (int number = 1; number <= game.Squares.Count; number++)
             {
                 if(!IsNumberInRow(row, number))
                 {
@@ -402,9 +408,19 @@ namespace Sudoku
                     allowedByRegion.Add(number);
                 }
             }
-            return allowedByRow.Intersect(allowedByColumn).Intersect(allowedByRegion);
+            allowed.UnionWith(allowedByRow);
+            allowed.IntersectWith(allowedByColumn);
+            allowed.IntersectWith(allowedByRegion);
+            return allowed;
+        }
 
-            throw new NotImplementedException();
+        public void SolveSquare(int x, int y)
+        {
+            var allowed = GetAllowedNumbersForSquare(x, y);
+            if(allowed.Count == 1)
+            {
+                SetNumber(x, y, allowed.ElementAt(0));
+            }            
         }
 
         public Game Game { get => game; set => game = value; }

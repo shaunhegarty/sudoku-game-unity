@@ -133,5 +133,71 @@ namespace SudokuUnitTest
             Assert.IsTrue(allowedNumbers.Contains(2));
             Assert.IsFalse(allowedNumbers.Contains(3));
         }
+    
+        [TestMethod]
+        public void TestSolveSquareEasy()
+        {
+            List<List<int>> numbers = new List<List<int>>() {
+                new List<int>() { 0, 0, 9, 2, 0, 8, 0, 0, 7 },
+                new List<int>() { 2, 8, 0, 9, 0, 7, 4, 3, 6 },
+                new List<int>() { 0, 3, 7, 5, 0, 0, 2, 9, 8 },
+                new List<int>() { 0, 4, 3, 6, 0, 1, 0, 0, 0 },
+                new List<int>() { 8, 7, 0, 0, 5, 2, 0, 0, 9 },
+                new List<int>() { 0, 2, 0, 8, 7, 0, 1, 5, 0 },
+                new List<int>() { 7, 1, 8, 3, 0, 0, 9, 0, 5 },
+                new List<int>() { 3, 0, 0, 7, 8, 0, 0, 0, 1 },
+                new List<int>() { 0, 5, 2, 1, 4, 0, 0, 8, 3 },
+            };
+
+            Game game = new Game(numbers);
+            game.BuildBoard();
+
+            Solver solver = new Solver(game);
+
+            Console.WriteLine(game.ToString());
+            bool isGameValid = solver.IsGameValid(out HashSet<Position> invalids);
+            Console.WriteLine(String.Join("\n", invalids));
+            Assert.IsTrue(isGameValid);
+
+            solver.SolveSquare(4, 3);
+            isGameValid = solver.IsGameValid(out _);
+            Assert.IsTrue(isGameValid);
+            Console.WriteLine(game.ToString());
+
+            Assert.IsTrue(solver.Game.GetSquare(4, 3).Number == 4);
+        }
+
+        [TestMethod]
+        public void TestSolveSquareMedium()
+        {
+            List<List<int>> numbers = new List<List<int>>() {
+                new List<int>() { 0, 0, 9, 2, 0, 8, 0, 0, 7 },
+                new List<int>() { 2, 8, 0, 9, 0, 7, 4, 3, 6 },
+                new List<int>() { 0, 3, 7, 5, 0, 0, 2, 9, 8 },
+                new List<int>() { 0, 4, 3, 6, 0, 1, 0, 0, 0 },
+                new List<int>() { 8, 7, 0, 0, 5, 2, 0, 0, 9 },
+                new List<int>() { 0, 2, 0, 8, 7, 0, 1, 5, 0 },
+                new List<int>() { 7, 1, 8, 3, 0, 0, 9, 0, 5 },
+                new List<int>() { 3, 0, 0, 7, 8, 0, 0, 0, 1 },
+                new List<int>() { 0, 5, 2, 1, 4, 0, 0, 8, 3 },
+            };
+
+            Game game = new Game(numbers);
+            game.BuildBoard();
+
+            Solver solver = new Solver(game);
+
+            Console.WriteLine(game.ToString());
+            bool isGameValid = solver.IsGameValid(out HashSet<Position> invalids);
+            Console.WriteLine(String.Join("\n", invalids));
+            Assert.IsTrue(isGameValid);
+
+            solver.SolveSquare(4, 2);
+            isGameValid = solver.IsGameValid(out _);
+            Assert.IsTrue(isGameValid);
+            Console.WriteLine(game.ToString());
+
+            Assert.IsTrue(solver.Game.GetSquare(4, 2).Number == 4);
+        }
     }
 }
