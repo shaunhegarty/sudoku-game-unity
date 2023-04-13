@@ -285,15 +285,34 @@ namespace Sudoku
             y = newY;
         }
 
+        public static Position New(int newX, int newY)
+        {
+            return new Position(newX, newY);
+        }
         public override string ToString()
         {
             return Square.LabelFromPosition(this);
         }
     }
 
+    public struct Solution
+    {
+        public int Number;
+        public Position Index;
+        public string Explanation;
+
+        public Solution(int number, Position index, string explanation)
+        {
+            Number = number;
+            Index = index;
+            Explanation = explanation;
+        }
+    }
     public class Solver
     {
         private Game game;
+        public List<Solution> solutions = new List<Solution>();
+        private Dictionary<Position, List<Solution>> solutionsByIndex = new Dictionary<Position, List<Solution>>();
 
         public Solver(Game gameToSolve)
         {
@@ -469,12 +488,13 @@ namespace Sudoku
 
         public void SolveBoard()
         {
-            List<Square> simpleSolvable = new List<Square>();
-            HashSet<Square> mediumSolvable = new HashSet<Square>();
+            solutions = new List<Solution>();
+            HashSet<Solution> simpleSolvable = new HashSet<Solution>();
+            HashSet<Solution> mediumSolvable = new HashSet<Solution>();
             // First Pass, identify possible numbers based on current row, column and region placement, 
             IEnumerable<Square> emptySquares = from square in game.AllSquares() where square.Number == 0 select square;
 
-            Console.WriteLine("\nEasy Solves:\n");
+            
             foreach (Square square in emptySquares)
             {
                 square.ClearAllowedNumbers();
@@ -484,39 +504,85 @@ namespace Sudoku
 
                 if(allowed.Count == 1)
                 {
-                    simpleSolvable.Add(square);
-                    Console.WriteLine($"{square.Index} is solvable: value should be {square.AllowedNumbers.ElementAt(0)}");
+                    Solution solution = new Solution(square.AllowedNumbers.ElementAt(0), square.Index, $"{square.Index} can only accept {square.AllowedNumbers.ElementAt(0)}");
+                    simpleSolvable.Add(solution);                    
                 }
             }
 
-            Console.WriteLine("\nMedium Solves:");
+
             // Second Pass, identify if square is only square within a region which may permit a certain number
             // get empty squares in row (i.e. where the number is 0)
             // for each unsolved number, count the number of squares for which it is allowed, if it is only 1, then the square is solved
-            Console.WriteLine("\nBy Row:");
             foreach (Region region in game.Rows)
             {
-                mediumSolvable.UnionWith(SolveRegion(region));
+                mediumSolvable.UnionWith(SolveRegion(region, additionalInfo: "Row"));
             }
 
-            Console.WriteLine("\nBy Column:");
             foreach (Region region in game.Columns)
             {
                 // TODO store correct number somewhere to be applied later
-                mediumSolvable.UnionWith(SolveRegion(region));
+                mediumSolvable.UnionWith(SolveRegion(region, additionalInfo: "Column"));
             }
 
-            Console.WriteLine("\nBy Region:");
             foreach (Region region in game.Regions)
             {
                 // TODO store correct number somewhere to be applied later
-                mediumSolvable.UnionWith(SolveRegion(region));
+                mediumSolvable.UnionWith(SolveRegion(region, additionalInfo: "Region"));
+            }
+
+            solutions.AddRange(simpleSolvable);
+            solutions.AddRange(mediumSolvable);
+
+            // PrintSolutions();
+            MapSolutionByIndex();
+                
+        }
+
+        private void MapSolutionByIndex()
+        {
+            solutionsByIndex = new Dictionary<Position, List<Solution>>();
+            var mappedSolutions = from solution in solutions
+                                  group solution by solution.Index into sGroup
+                                  select sGroup;
+            foreach(var indexGroup in mappedSolutions)
+            {
+                List<Solution> indexedSolutions = new List<Solution>();
+                foreach(var solution in indexGroup)
+                {
+                    indexedSolutions.Add(solution);
+                }
+                solutionsByIndex.Add(indexGroup.Key, indexedSolutions);
             }
         }
 
-        private HashSet<Square> SolveRegion(Region region)
+        public List<Solution> GetSolutionsByIndex(Position index)
         {
-            var mediumSolvable = new HashSet<Square>();
+            solutionsByIndex.TryGetValue(index, out List<Solution> output);
+            return output;
+        }
+
+        public int GetSolvedNumberForIndex(Position index)
+        {
+            return GetSolutionsByIndex(index)[0].Number;
+        }
+
+        public int GetSolvedNumberForIndex(int row, int col)
+        {
+            return GetSolvedNumberForIndex(new Position(row, col));
+        }
+
+        public void PrintSolutions()
+        {
+            Console.WriteLine("\nSolutions:\n");
+            foreach (Solution solution in solutions.OrderBy(x => x.Index.ToString()))
+            {
+                Console.WriteLine(solution.Explanation);
+            }
+        }
+
+        private HashSet<Solution> SolveRegion(Region region, string additionalInfo = "")
+        {
+            var mediumSolvable = new HashSet<Solution>();
             var rowSquares = from rowSquare in region.Squares where rowSquare.Number == 0 select rowSquare;
             for (int number = 1; number <= region.Squares.Count; number++)
             {
@@ -531,8 +597,9 @@ namespace Sudoku
                 if (squareList.Count == 1)
                 {
                     var square = squareList[0];
-                    mediumSolvable.Add(square);
-                    Console.WriteLine($"{square.Index} is solvable: value should be {number}");
+                    Solution solution = new Solution(number, square.Index, $"{square.Index} is the only position which can accept {number} ({additionalInfo})");
+                    mediumSolvable.Add(solution);
+                    // Console.WriteLine(solution.Explanation);
                 }
             }
 

@@ -190,17 +190,11 @@ namespace SudokuUnitTest
             Solver solver = new Solver(game);
             solver.SolveBoard();
 
-            /*Console.WriteLine(game.ToString());
-            bool isGameValid = solver.IsGameValid(out HashSet<Position> invalids);
-            Console.WriteLine(String.Join("\n", invalids));
-            Assert.IsTrue(isGameValid);
-
-            solver.SolveSquare(4, 2);
-            isGameValid = solver.IsGameValid(out _);
-            Assert.IsTrue(isGameValid);
-            Console.WriteLine(game.ToString());*/
-
-            Assert.IsTrue(solver.Game.GetSquare(4, 2).Number == 4);
+            //solver.PrintSolutions();
+            Assert.AreEqual(4, solver.GetSolvedNumberForIndex(0, 0));
+            Assert.AreEqual(1, solver.GetSolvedNumberForIndex(4, 2));
+            Assert.AreEqual(4, solver.GetSolvedNumberForIndex(4, 3));
+            Assert.AreEqual(2, solver.GetSolvedNumberForIndex(7, 7));            
         }
     }
 }

@@ -41,6 +41,7 @@ public class BoardManager : MonoBehaviour
                 square.transform.SetParent(transform);
 
                 square.SetIndex(i, j);
+                square.S
                 square.gameObject.name = $"Square {square.Label}";
                 
                 row.Add(square);
