@@ -11,12 +11,13 @@ public class MaterialChangeOnHighlight : MonoBehaviour
     public Material hoverMaterial;
     public Material selectMaterial;
 
+    public Material notYetSolveMaterial;
     public Material easySolveMaterial;
     public Material mediumSolveMaterial;
     private Material currentMaterial;
 
     private bool isSelected = false;
-    private SudokuSquare.SolveDifficulty lastDifficulty = SudokuSquare.SolveDifficulty.None;
+    private Sudoku.Difficulty lastDifficulty = Sudoku.Difficulty.None;
     private SudokuSquare square;
 
     // Start is called before the first frame update
@@ -73,19 +74,29 @@ public class MaterialChangeOnHighlight : MonoBehaviour
         }
     }
 
-    void SetMaterialByDifficulty(SudokuSquare.SolveDifficulty difficulty)
+    public void SetMaterialByDifficulty(Sudoku.Difficulty difficulty)
     {
-        if (difficulty == SudokuSquare.SolveDifficulty.None)
+        if (difficulty == Sudoku.Difficulty.None)
         {
-            currentMaterial = baseMaterial;
+            if(square.Number == 0)
+            {
+                currentMaterial = notYetSolveMaterial;
+            } else
+            {
+                currentMaterial = baseMaterial;
+            }            
         }
-        else if (difficulty == SudokuSquare.SolveDifficulty.Easy)
+        else if (difficulty == Sudoku.Difficulty.Easy)
         {
             currentMaterial = easySolveMaterial;
         }
-        else if (difficulty == SudokuSquare.SolveDifficulty.Medium)
+        else if (difficulty == Sudoku.Difficulty.Medium)
         {
             currentMaterial = mediumSolveMaterial;
+        } else
+        {
+            currentMaterial = notYetSolveMaterial;
         }
+        baseRenderer.material = currentMaterial;
     }
 }

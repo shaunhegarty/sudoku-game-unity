@@ -64,10 +64,10 @@ public class BoardManager : MonoBehaviour
                 square.SetIndex(i, j);
                 var index = new Sudoku.Position(i, j);
                 square.SetNumber(internalGame.GetNumber(index));
-                var solutions = internalSolver.GetSolutionsByIndex(index);
-                if (square.Number == 0 && (solutions != null && solutions.Count > 0))
-                {
-                    square.difficulty = SudokuSquare.SolveDifficulty.Medium;
+                var solution = internalSolver.GetBestAvailableSolution(index);
+                if (square.Number == 0 && solution.Number != 0)
+                {                    
+                    square.difficulty = solution.Difficulty;                   
                 };
                 square.gameObject.name = $"Square {square.Label}";
 

@@ -9,7 +9,7 @@ public class SudokuSquare : MonoBehaviour
     public TMP_Text indexMesh;
     public int Number;
     public Vector2Int Index { get; private set; }
-    public SolveDifficulty difficulty = SolveDifficulty.None;
+    public Sudoku.Difficulty difficulty = Sudoku.Difficulty.None;
 
     public string Label { get
         {
@@ -17,7 +17,7 @@ public class SudokuSquare : MonoBehaviour
         } 
     }
 
-    private MaterialChangeOnHighlight highlighter;
+    public MaterialChangeOnHighlight highlighter;
 
     private void Start()
     {
@@ -70,10 +70,5 @@ public class SudokuSquare : MonoBehaviour
     public void Deselect()
     {
         highlighter.OnDeselect();
-    }
-
-    public enum SolveDifficulty
-    {
-        None, Easy, Medium
     }
 }

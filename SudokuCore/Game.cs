@@ -318,13 +318,21 @@ namespace Sudoku
         public int Number;
         public Position Index;
         public string Explanation;
+        public Difficulty Difficulty;
 
-        public Solution(int number, Position index, string explanation)
+
+        public Solution(int number, Position index, string explanation, Difficulty difficulty)
         {
             Number = number;
             Index = index;
             Explanation = explanation;
+            Difficulty = difficulty;
         }
+    }
+
+    public enum Difficulty
+    {
+        None, Easy, Medium, Hard
     }
     public class Solver
     {
@@ -522,7 +530,11 @@ namespace Sudoku
 
                 if(allowed.Count == 1)
                 {
-                    Solution solution = new Solution(square.AllowedNumbers.ElementAt(0), square.Index, $"{square.Index} can only accept {square.AllowedNumbers.ElementAt(0)}");
+                    Solution solution = new Solution(
+                        number: square.AllowedNumbers.ElementAt(0), 
+                        index: square.Index, 
+                        explanation: $"{square.Index} can only accept {square.AllowedNumbers.ElementAt(0)}", 
+                        difficulty: Difficulty.Easy);
                     simpleSolvable.Add(solution);                    
                 }
             }
@@ -560,12 +572,12 @@ namespace Sudoku
         {
             solutionsByIndex = new Dictionary<Position, List<Solution>>();
             var mappedSolutions = from solution in solutions
-                                  group solution by solution.Index into sGroup
+                                  group solution by solution.Index into sGroup                                  
                                   select sGroup;
             foreach(var indexGroup in mappedSolutions)
             {
                 List<Solution> indexedSolutions = new List<Solution>();
-                foreach(var solution in indexGroup)
+                foreach(var solution in indexGroup.OrderBy(s => s.Difficulty))
                 {
                     indexedSolutions.Add(solution);
                 }
@@ -577,6 +589,16 @@ namespace Sudoku
         {
             solutionsByIndex.TryGetValue(index, out List<Solution> output);
             return output;
+        }
+
+        public Solution GetBestAvailableSolution(Position index)
+        {
+            var solutions = GetSolutionsByIndex(index);
+            if (solutions != null)
+            {
+                return solutions[0];
+            }
+            return new Solution();
         }
 
         public int GetSolvedNumberForIndex(Position index)
@@ -615,7 +637,11 @@ namespace Sudoku
                 if (squareList.Count == 1)
                 {
                     var square = squareList[0];
-                    Solution solution = new Solution(number, square.Index, $"{square.Index} is the only position which can accept {number} ({additionalInfo})");
+                    Solution solution = new Solution(
+                        number: number, 
+                        index: square.Index, 
+                        explanation: $"{square.Index} is the only position which can accept {number} ({additionalInfo})",
+                        difficulty: Difficulty.Medium);
                     mediumSolvable.Add(solution);
                     // Console.WriteLine(solution.Explanation);
                 }
