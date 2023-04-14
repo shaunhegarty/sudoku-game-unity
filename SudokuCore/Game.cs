@@ -31,6 +31,24 @@ namespace Sudoku
             numbersPreloaded = true;
         }
 
+        public static Game DefaultGame()
+        {
+            List<List<int>> numbers = new List<List<int>>() {
+                new List<int>() { 0, 0, 9, 2, 0, 8, 0, 0, 7 },
+                new List<int>() { 2, 8, 0, 9, 0, 7, 4, 3, 6 },
+                new List<int>() { 0, 3, 7, 5, 0, 0, 2, 9, 8 },
+                new List<int>() { 0, 4, 3, 6, 0, 1, 0, 0, 0 },
+                new List<int>() { 8, 7, 0, 0, 5, 2, 0, 0, 9 },
+                new List<int>() { 0, 2, 0, 8, 7, 0, 1, 5, 0 },
+                new List<int>() { 7, 1, 8, 3, 0, 0, 9, 0, 5 },
+                new List<int>() { 3, 0, 0, 7, 8, 0, 0, 0, 1 },
+                new List<int>() { 0, 5, 2, 1, 4, 0, 0, 8, 3 },
+            };
+
+            Game game = new Game(numbers);
+            return game;
+        }
+
         public void BuildBoard(int boardSize = 9)
         {
             // Regions in Sudoku are typically the 9 3x3 squares. 

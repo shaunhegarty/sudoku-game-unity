@@ -240,6 +240,8 @@ MonoBehaviour:
   targetObject: {fileID: 8192957190038572691}
   hoverMaterial: {fileID: 2100000, guid: 89f518b8e360b2b43b0e764430c9cc96, type: 2}
   selectMaterial: {fileID: 2100000, guid: 18d841dcb569562418d67e4c8a6e553b, type: 2}
+  easySolveMaterial: {fileID: 2100000, guid: ad6e53948bf58a14aade7db5357d53c8, type: 2}
+  mediumSolveMaterial: {fileID: 2100000, guid: 98040d791bea38243946a2e49ffce511, type: 2}
 --- !u!114 &5874243378620522350
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -255,6 +257,7 @@ MonoBehaviour:
   textMesh: {fileID: 8192957189484462490}
   indexMesh: {fileID: 3828913184298131327}
   Number: 0
+  difficulty: 0
 --- !u!65 &8192957189223710419
 BoxCollider:
   m_ObjectHideFlags: 0
