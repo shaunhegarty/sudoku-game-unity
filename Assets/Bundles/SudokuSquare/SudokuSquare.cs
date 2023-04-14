@@ -8,6 +8,7 @@ public class SudokuSquare : MonoBehaviour
     public TMP_Text textMesh;
     public TMP_Text indexMesh;
     public int Number;
+    public bool fixedNumber = false;
     public Vector2Int Index { get; private set; }
     public Sudoku.Difficulty difficulty = Sudoku.Difficulty.None;
 
@@ -29,7 +30,7 @@ public class SudokuSquare : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        UpdateNumberText();
+       UpdateNumberText();     
     }
 
     private void OnMouseDown()

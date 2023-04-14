@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using TMPro;
 
@@ -13,7 +14,7 @@ public class BoardManager : MonoBehaviour
     // Position Settings
     public float spacing = 0.1f;
     public float innerSpacing = 0.05f;
-    private int boardSize = 9;
+    private readonly int boardSize = 9;
 
     // Game State
     private Sudoku.Game internalGame;
@@ -60,36 +61,92 @@ public class BoardManager : MonoBehaviour
                     ),
                     rotation: squarePrefab.transform.rotation);
                 square.transform.SetParent(transform);
-
-                square.SetIndex(i, j);
-                var index = new Sudoku.Position(i, j);
-                square.SetNumber(internalGame.GetNumber(index));
-                var solution = internalSolver.GetBestAvailableSolution(index);
-                if (square.Number == 0 && solution.Number != 0)
-                {                    
-                    square.difficulty = solution.Difficulty;                   
-                };
                 square.gameObject.name = $"Square {square.Label}";
+                square.SetIndex(i, j);
 
-                row.Add(square);
+                MatchSquareToInternal(square, fixValue: true);
+
+                row.Add(square);               
             }
             sudokuSquares.Add(row);
         }
     }
+    private static Sudoku.Position Vector2Position(Vector2Int v)
+    {
+        return new Sudoku.Position(v.x, v.y);
+    }
+    private void MatchSquareToInternal(SudokuSquare square, bool fixValue = false)
+    {
+        Debug.Log($"Updating {square}");
+        Sudoku.Position position = Vector2Position(square.Index);
+        var number = internalGame.GetNumber(position);
+        square.SetNumber(number);
+
+        if (number != 0 && fixValue)
+        {
+            Destroy(square.GetComponent<BoxCollider>());
+            square.fixedNumber = true;
+        }
+
+        var solution = internalSolver.GetBestAvailableSolution(position);
+        if (square.Number == 0 && solution.Number != 0)
+        {
+            square.difficulty = solution.Difficulty;
+        };
+    }
+
+    private void UpdateBoard()
+    {
+        Debug.Log("Updating Board");
+        var allSquares = from row in sudokuSquares 
+                         from square in row
+                         where !square.fixedNumber
+                         select square;
+        foreach(SudokuSquare square in allSquares)
+        {
+            MatchSquareToInternal(square);
+            
+        }
+        Debug.Log(internalGame);
+    }
 
     public void SetActiveSquare(SudokuSquare square)
     {
+        bool sameSquare = false;
+        
         if(activeSquare != null)
         {
-            activeSquare.Deselect();
-        }        
-        activeSquare = square;
-        activeSquare.Select();
+            sameSquare = activeSquare.Equals(square);
+            Deselect();        
+                        
+        }      
+        if(!sameSquare)
+        {
+            activeSquare = square;
+            activeSquare.Select();
+        }
+        
+    }
+
+    private void Deselect()
+    {
+        activeSquare.Deselect();
+        activeSquare = null;
     }
 
     public void SetActiveSquareNumber(int number)
     {
-        activeSquare.SetNumber(number);
+        var position = Vector2Position(activeSquare.Index);
+        if(internalSolver.ValidateNumberForSquare(position.x, position.y, number))
+        {
+            internalSolver.SetNumber(activeSquare.Index.x, activeSquare.Index.y, number);
+            internalSolver.SolveBoard();            
+            activeSquare.SetNumber(number);
+            Deselect();
+            UpdateBoard();
+            
+        }
+        
     }
 
 
