@@ -131,6 +131,7 @@ public class BoardManager : MonoBehaviour
     private void Deselect()
     {
         activeSquare.Deselect();
+        numberDropdown.value = 0;
         activeSquare = null;
     }
 
