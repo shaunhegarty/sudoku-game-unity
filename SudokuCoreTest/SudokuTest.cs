@@ -196,5 +196,47 @@ namespace SudokuUnitTest
             Assert.AreEqual(4, solver.GetSolvedNumberForIndex(4, 3));
             Assert.AreEqual(2, solver.GetSolvedNumberForIndex(7, 7));            
         }
+
+
+        [TestMethod]
+        public void TestReversability()
+        {
+            List<List<int>> numbers = new List<List<int>>() {
+                new List<int>() { 0, 0, 9, 2, 0, 8, 0, 0, 7 },
+                new List<int>() { 2, 8, 0, 9, 0, 7, 4, 3, 6 },
+                new List<int>() { 0, 3, 7, 5, 0, 0, 2, 9, 8 },
+                new List<int>() { 0, 4, 3, 6, 0, 1, 0, 0, 0 },
+                new List<int>() { 8, 7, 0, 0, 5, 2, 0, 0, 9 },
+                new List<int>() { 0, 2, 0, 8, 7, 0, 1, 5, 0 },
+                new List<int>() { 7, 1, 8, 3, 0, 0, 9, 0, 5 },
+                new List<int>() { 3, 0, 0, 7, 8, 0, 0, 0, 1 },
+                new List<int>() { 0, 5, 2, 1, 4, 0, 0, 8, 3 },
+            };
+
+            Game game = new Game(numbers);
+            game.BuildBoard();
+
+            Console.WriteLine(game.ToString());
+
+            Solver solver = new Solver(game);
+            solver.SolveBoard();
+
+            solver.PrintSolutions();
+            Position positon = new Position(2, 0);
+            Assert.AreEqual(0, solver.GetSolvedNumberForIndex(positon));
+            Assert.AreEqual(0, solver.GetBestAvailableSolution(positon).Number);
+
+            solver.SetNumber(1, 4, number: 1);
+            solver.SolveBoard();
+            Assert.AreEqual(1, solver.GetSolvedNumberForIndex(positon));
+            Assert.AreEqual(1, solver.GetBestAvailableSolution(positon).Number);
+
+            solver.SetNumber(1, 4, number: 0);
+            solver.SolveBoard();
+            Assert.AreEqual(0, solver.GetSolvedNumberForIndex(positon));
+            Assert.AreEqual(0, solver.GetBestAvailableSolution(positon).Number);
+
+            solver.PrintSolutions();
+        }
     }
 }

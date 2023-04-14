@@ -431,7 +431,7 @@ namespace Sudoku
 
         public void SetNumber(int x, int y, int number)
         {
-            if (ValidateNumberForSquare(x, y, number))
+            if (number == 0 || ValidateNumberForSquare(x, y, number))
             {
                 game.GetSquare(x, y).Number = number;
             }
@@ -603,7 +603,13 @@ namespace Sudoku
 
         public int GetSolvedNumberForIndex(Position index)
         {
-            return GetSolutionsByIndex(index)[0].Number;
+            var solutions = GetSolutionsByIndex(index);
+            if(solutions != null)
+            {
+                return GetSolutionsByIndex(index)[0].Number;
+            }
+            return 0;
+            
         }
 
         public int GetSolvedNumberForIndex(int row, int col)

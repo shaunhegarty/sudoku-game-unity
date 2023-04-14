@@ -60,9 +60,9 @@ public class BoardManager : MonoBehaviour
                         z: j * (squareCollider.size.z + spacing) + yAdjustment
                     ),
                     rotation: squarePrefab.transform.rotation);
-                square.transform.SetParent(transform);
-                square.gameObject.name = $"Square {square.Label}";
+                square.transform.SetParent(transform);                
                 square.SetIndex(i, j);
+                square.gameObject.name = $"Square {square.Label}";
 
                 MatchSquareToInternal(square, fixValue: true);
 
@@ -75,9 +75,9 @@ public class BoardManager : MonoBehaviour
     {
         return new Sudoku.Position(v.x, v.y);
     }
+
     private void MatchSquareToInternal(SudokuSquare square, bool fixValue = false)
     {
-        Debug.Log($"Updating {square}");
         Sudoku.Position position = Vector2Position(square.Index);
         var number = internalGame.GetNumber(position);
         square.SetNumber(number);
@@ -89,15 +89,57 @@ public class BoardManager : MonoBehaviour
         }
 
         var solution = internalSolver.GetBestAvailableSolution(position);
-        if (square.Number == 0 && solution.Number != 0)
+        if (square.Number == 0)
         {
-            square.difficulty = solution.Difficulty;
+            square.difficulty = solution.Number != 0 ? solution.Difficulty : Sudoku.Difficulty.None;                        
         };
     }
 
-    private void UpdateBoard()
+    private readonly KeyCode[] alphaNums =
     {
-        Debug.Log("Updating Board");
+         KeyCode.Alpha0,
+         KeyCode.Alpha1,
+         KeyCode.Alpha2,
+         KeyCode.Alpha3,
+         KeyCode.Alpha4,
+         KeyCode.Alpha5,
+         KeyCode.Alpha6,
+         KeyCode.Alpha7,
+         KeyCode.Alpha8,
+         KeyCode.Alpha9,
+    };
+
+    private readonly KeyCode[] keypadNums =
+{
+         KeyCode.Keypad0,
+         KeyCode.Keypad1,
+         KeyCode.Keypad2,
+         KeyCode.Keypad3,
+         KeyCode.Keypad4,
+         KeyCode.Keypad5,
+         KeyCode.Keypad6,
+         KeyCode.Keypad7,
+         KeyCode.Keypad8,
+         KeyCode.Keypad9,
+    };
+
+    private void Update()
+    {
+        if(activeSquare != null)
+        {
+            for (int i = 0; i < alphaNums.Length; i++)
+            {
+                if (Input.GetKeyDown(alphaNums[i]) || Input.GetKeyDown(keypadNums[i]))
+                {
+                    SetActiveSquareNumber(i);
+                }
+            }
+        }
+        
+    }
+
+    private void UpdateBoard()
+    {  
         var allSquares = from row in sudokuSquares 
                          from square in row
                          where !square.fixedNumber
@@ -138,14 +180,13 @@ public class BoardManager : MonoBehaviour
     public void SetActiveSquareNumber(int number)
     {
         var position = Vector2Position(activeSquare.Index);
-        if(internalSolver.ValidateNumberForSquare(position.x, position.y, number))
+        if(number == 0 || internalSolver.ValidateNumberForSquare(position.x, position.y, number))
         {
             internalSolver.SetNumber(activeSquare.Index.x, activeSquare.Index.y, number);
             internalSolver.SolveBoard();            
             activeSquare.SetNumber(number);
             Deselect();
-            UpdateBoard();
-            
+            UpdateBoard();            
         }
         
     }
