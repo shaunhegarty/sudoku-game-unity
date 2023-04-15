@@ -154,6 +154,7 @@ public class BoardManager : MonoBehaviour
             MatchSquareToInternal(square);
             
         }
+        ShowWhereNumberIsAllowed(10);
         Debug.Log(internalGame);
     }
 

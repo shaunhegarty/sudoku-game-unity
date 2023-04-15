@@ -30,10 +30,10 @@ namespace SudokuUnitTest
             game.BuildBoard();
 
             Square squareToTest = game.GetSquare(0, 0);
-            Region squareRegion = game.GetRegion(squareToTest.RegionIndex);
+            Region squareRegion = game.GetBlock(squareToTest.RegionIndex);
             Assert.IsTrue(squareRegion.IsSquareInRegion(squareToTest));
 
-            Region other = game.GetRegion(8);
+            Region other = game.GetBlock(8);
             Assert.IsFalse(other.IsSquareInRegion(squareToTest));
         }
 
@@ -253,6 +253,35 @@ namespace SudokuUnitTest
             var allowedNumbers = solver.Game.GetSquare(position).AllowedNumbers;
             Console.WriteLine(string.Join(" ", allowedNumbers));
             Assert.IsFalse(allowedNumbers.Contains(7));            
+        }
+
+        [TestMethod]
+        public void TestRemoveCandidatesViaBlockBlockInteraction()
+        {
+            List<List<int>> numbers = new List<List<int>>() {
+                new List<int>() { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+                new List<int>() { 0, 0, 8, 0, 0, 0, 0, 0, 0 },
+                new List<int>() { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+                new List<int>() { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+                new List<int>() { 2, 9, 0, 0, 1, 4, 0, 0, 0 },
+                new List<int>() { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+                new List<int>() { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+                new List<int>() { 0, 0, 0, 8, 0, 0, 0, 0, 0 },
+                new List<int>() { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+            };
+
+            Game game = new Game(numbers);
+            game.BuildBoard();
+
+            Console.WriteLine(game.ToString());
+
+            Solver solver = new Solver(game);
+            solver.SolveBoard();
+
+            Position position = new Position(3, 6);
+            var allowedNumbers = solver.Game.GetSquare(position).AllowedNumbers;
+            Console.WriteLine($"Allowed for {position}: {string.Join(" ", allowedNumbers)}");
+            Assert.IsFalse(allowedNumbers.Contains(8));
         }
 
 

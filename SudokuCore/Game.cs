@@ -18,7 +18,7 @@ namespace Sudoku
 
         public List<Region> Rows => rows;
         public List<Region> Columns => columns;
-        public List<Region> Regions => regions;
+        public List<Region> Blocks => regions;
 
         public Game()
         {
@@ -95,7 +95,7 @@ namespace Sudoku
             // Region Index can be identified based on index position on the board, square knows its own region
             for(int i = 0; i < boardSize; i++)
             {
-                Regions.Add(new Region());
+                Blocks.Add(new Region());
             }
 
             for(int i = 0; i < boardSize; i++)
@@ -113,7 +113,7 @@ namespace Sudoku
                     }
                     
                     row.Add(square);
-                    Regions[square.RegionIndex].AddSquare(square);
+                    Blocks[square.RegionIndex].AddSquare(square);
                     
                 }
                 Rows.Add(new Region(row));
@@ -133,9 +133,9 @@ namespace Sudoku
             // Console.WriteLine(this);
         }
 
-        public Region GetRegion(int regionIndex)
+        public Region GetBlock(int regionIndex)
         {
-            return Regions[regionIndex];
+            return Blocks[regionIndex];
         }
 
         public override string ToString()
@@ -398,7 +398,7 @@ namespace Sudoku
 
         public bool IsRegionValid(int regionIndex, out IEnumerable<Position> invalidPositions, bool requireComplete = false)
         {
-            return IsSquareCollectionValid(game.GetRegion(regionIndex).Squares, out invalidPositions);
+            return IsSquareCollectionValid(game.GetBlock(regionIndex).Squares, out invalidPositions);
         }
 
         public bool IsSquareCollectionValid(List<Square> squaresToTest, out IEnumerable<Position> invalidPositions, bool requireComplete = false)
@@ -447,7 +447,7 @@ namespace Sudoku
 
         public bool IsNumberInRegion(int region, int number)
         {
-            return game.GetRegion(region).IsNumberInRegion(number);
+            return game.GetBlock(region).IsNumberInRegion(number);
         }
 
         /// <summary>
@@ -594,6 +594,13 @@ namespace Sudoku
             // https://www.kristanix.com/sudokuepic/sudoku-solving-techniques.php
 
             TrimCandidatesUsingBlockRowInteraction();
+            /*var position = Position.New(0, 0);
+            var allowedNumbers = GetAllowedNumbersForSquare(position);
+            Console.WriteLine($"Allowed for {position}: {string.Join(" ", allowedNumbers)} (After Block-Row)");            */
+
+            TrimCandidatesUsingBlockBlockInteraction();
+            /* allowedNumbers = GetAllowedNumbersForSquare(position);
+            Console.WriteLine($"Allowed for {position}: {string.Join(" ", allowedNumbers)} (After Block-Block)");*/            
 
             SolutionsForUniqueCandidates(simpleSolvable, mediumSolvable);
 
@@ -614,13 +621,11 @@ namespace Sudoku
 
             foreach (Region region in game.Columns)
             {
-                // TODO store correct number somewhere to be applied later
                 mediumSolvable.UnionWith(UniqueCandidatesForRegion(region, additionalInfo: "Column"));
             }
 
-            foreach (Region region in game.Regions)
+            foreach (Region region in game.Blocks)
             {
-                // TODO store correct number somewhere to be applied later
                 mediumSolvable.UnionWith(UniqueCandidatesForRegion(region, additionalInfo: "Region"));
             }
 
@@ -632,11 +637,11 @@ namespace Sudoku
         {
             // Block and Column/Row interaction
             // Find out if candidates within a block are limited to a single row or column
-            foreach (Region region in game.Regions)
+            foreach (Region block in game.Blocks)
             {
-                var solvedNumbers = from square in region.Squares where square.Number > 0 select square.Number;
-                var remainingSquares = from square in region.Squares where square.Number == 0 select square;
-                for(int i = 1; i <= region.Squares.Count; i++)
+                var solvedNumbers = from square in block.Squares where square.Number > 0 select square.Number;
+                var remainingSquares = from square in block.Squares where square.Number == 0 select square;
+                for(int i = 1; i <= block.Squares.Count; i++)
                 {
                     if(solvedNumbers.Contains(i))
                     {
@@ -676,6 +681,95 @@ namespace Sudoku
                         }
                     }
                 }
+            }
+        }
+
+        private void TrimCandidatesUsingBlockBlockInteraction()
+        {
+            // Block/Block interaction
+            // For blocks in a row, if a number's candidate locations span only two rows within two blocks, those two rows can be excluded from the third
+
+            // Let's start with the first row of blocks
+            // And within that let's just test the first two blocks
+            void TrimInteractionForGroup(int firstBlock, int secondBlock, int thirdBlock, bool useRows = true)
+            {
+                // does the candidate number span only two rows here?
+                var firstBlockSquares = from square in game.GetBlock(firstBlock).Squares
+                                        where square.Number == 0
+                                        select square;
+                var secondBlockSquares = from square in game.GetBlock(secondBlock).Squares
+                                         where square.Number == 0
+                                         select square;
+                var thirdBlockSquares = from square in game.GetBlock(thirdBlock).Squares
+                                         where square.Number == 0
+                                         select square;
+
+                for (int candidate = 1; candidate <= 9; candidate++)
+                {
+                    var linesForCandidate = new HashSet<int>();
+                    var blocksForCandidate = new HashSet<int>();
+                    foreach (Square square in firstBlockSquares)
+                    {
+                        if (square.AllowedNumbers.Contains(candidate))
+                        {
+                            linesForCandidate.Add(useRows ? square.Row : square.Column);
+                            blocksForCandidate.Add(square.RegionIndex);
+                        }
+                    }
+
+                    foreach (Square square in secondBlockSquares)
+                    {
+                        if (square.AllowedNumbers.Contains(candidate))
+                        {
+                            linesForCandidate.Add(useRows ? square.Row : square.Column);
+                            blocksForCandidate.Add(square.RegionIndex);
+                        }
+                    }
+
+                    if (linesForCandidate.Count == 2 && blocksForCandidate.Count == 2)
+                    {
+                        foreach (int line in linesForCandidate)
+                        {
+                            var lineSquares = useRows ? game.GetRow(line) : game.GetColumn(line);
+                            // Remove candidate from squares not in region
+                            var remainingRowSquares = from square in lineSquares
+                                                      where square.Number == 0 && thirdBlockSquares.Contains(square)
+                                                      select square;
+                            foreach (Square square in remainingRowSquares)
+                            {
+                                square.DisallowNumber(candidate);
+                            }
+                        }
+                    }
+                }
+
+
+            }
+            
+            for (int blockRow = 0; blockRow < 3; blockRow ++)
+            {
+                // Magic Numbers for Rows :(
+                int block1 = blockRow * 3;
+                int block2 = blockRow * 3 + 1;
+                int block3 = blockRow * 3 + 2;
+
+                // Who needs a permutation function anyway
+                TrimInteractionForGroup(block1, block2, block3);                
+                TrimInteractionForGroup(block1, block3, block2);
+                TrimInteractionForGroup(block2, block3, block1);
+            }
+
+            for (int blockColumn = 0; blockColumn < 3; blockColumn++)
+            {
+                // Magic Numbers for Columns :(
+                int block1 = blockColumn;
+                int block2 = blockColumn + 3;
+                int block3 = blockColumn + 6;
+
+                // Who needs a permutation function anyway
+                TrimInteractionForGroup(block1, block2, block3, useRows: false);
+                TrimInteractionForGroup(block1, block3, block2, useRows: false);
+                TrimInteractionForGroup(block2, block3, block1, useRows: false);
             }
         }
 
