@@ -49,6 +49,46 @@ namespace Sudoku
             return game;
         }
 
+        public static Game InsaneGame()
+        {
+            /// Insane #190
+            
+            List<List<int>> numbers = new List<List<int>>() {
+                new List<int>() { 0, 0, 0, 0, 0, 0, 0, 0, 4 },
+                new List<int>() { 0, 0, 9, 0, 7, 5, 0, 8, 0 },
+                new List<int>() { 0, 0, 5, 0, 0, 0, 0, 0, 0 },
+                new List<int>() { 0, 0, 2, 0, 0, 0, 0, 6, 0 },
+                new List<int>() { 0, 0, 0, 5, 0, 0, 2, 0, 0 },
+                new List<int>() { 0, 0, 0, 0, 0, 0, 1, 0, 0 },
+                new List<int>() { 0, 0, 0, 0, 0, 0, 7, 0, 0 },
+                new List<int>() { 5, 0, 0, 0, 6, 0, 0, 0, 8 },
+                new List<int>() { 0, 0, 7, 0, 5, 0, 0, 0, 2 },
+            };
+
+            Game game = new Game(numbers);
+            return game;
+        }
+
+        public static Game VeryHardGame()
+        {
+            /// Very Hard #202
+
+            List<List<int>> numbers = new List<List<int>>() {
+                new List<int>() { 0, 0, 1, 7, 0, 3, 0, 5, 0 },
+                new List<int>() { 0, 0, 0, 0, 0, 9, 0, 7, 0 },
+                new List<int>() { 0, 0, 0, 0, 0, 0, 3, 0, 8 },
+                new List<int>() { 2, 0, 0, 0, 0, 0, 1, 0, 0 },
+                new List<int>() { 0, 7, 0, 0, 0, 0, 4, 0, 0 },
+                new List<int>() { 4, 0, 3, 0, 0, 0, 0, 0, 0 },
+                new List<int>() { 0, 0, 0, 0, 0, 7, 0, 9, 0 },
+                new List<int>() { 5, 6, 0, 3, 0, 2, 0, 0, 0 },
+                new List<int>() { 0, 0, 8, 0, 0, 1, 5, 0, 4 },
+            };
+
+            Game game = new Game(numbers);
+            return game;
+        }
+
         public void BuildBoard(int boardSize = 9)
         {
             // Regions in Sudoku are typically the 9 3x3 squares. 
@@ -517,7 +557,7 @@ namespace Sudoku
             solutions = new List<Solution>();
             HashSet<Solution> simpleSolvable = new HashSet<Solution>();
             HashSet<Solution> mediumSolvable = new HashSet<Solution>();
-            // First Pass, identify possible numbers based on current row, column and region placement, 
+            // First Pass, identify candidates based on current row, column and region placement, 
             IEnumerable<Square> emptySquares = from square in game.AllSquares() where square.Number == 0 select square;
 
             
@@ -533,11 +573,14 @@ namespace Sudoku
                     Solution solution = new Solution(
                         number: square.AllowedNumbers.ElementAt(0), 
                         index: square.Index, 
-                        explanation: $"{square.Index} can only accept {square.AllowedNumbers.ElementAt(0)}", 
+                        explanation: $"{square.Index} has sole candidate number: {square.AllowedNumbers.ElementAt(0)}", 
                         difficulty: Difficulty.Easy);
                     simpleSolvable.Add(solution);                    
                 }
             }
+
+            // Methods to remove candidates
+            // https://www.kristanix.com/sudokuepic/sudoku-solving-techniques.php
 
 
             // Second Pass, identify if square is only square within a region which may permit a certain number
@@ -545,19 +588,19 @@ namespace Sudoku
             // for each unsolved number, count the number of squares for which it is allowed, if it is only 1, then the square is solved
             foreach (Region region in game.Rows)
             {
-                mediumSolvable.UnionWith(SolveRegion(region, additionalInfo: "Row"));
+                mediumSolvable.UnionWith(UniqueCandidatesForRegion(region, additionalInfo: "Row"));
             }
 
             foreach (Region region in game.Columns)
             {
                 // TODO store correct number somewhere to be applied later
-                mediumSolvable.UnionWith(SolveRegion(region, additionalInfo: "Column"));
+                mediumSolvable.UnionWith(UniqueCandidatesForRegion(region, additionalInfo: "Column"));
             }
 
             foreach (Region region in game.Regions)
             {
                 // TODO store correct number somewhere to be applied later
-                mediumSolvable.UnionWith(SolveRegion(region, additionalInfo: "Region"));
+                mediumSolvable.UnionWith(UniqueCandidatesForRegion(region, additionalInfo: "Region"));
             }
 
             solutions.AddRange(simpleSolvable);
@@ -626,7 +669,7 @@ namespace Sudoku
             }
         }
 
-        private HashSet<Solution> SolveRegion(Region region, string additionalInfo = "")
+        private HashSet<Solution> UniqueCandidatesForRegion(Region region, string additionalInfo = "")
         {
             var mediumSolvable = new HashSet<Solution>();
             var rowSquares = from rowSquare in region.Squares where rowSquare.Number == 0 select rowSquare;
@@ -646,7 +689,7 @@ namespace Sudoku
                     Solution solution = new Solution(
                         number: number, 
                         index: square.Index, 
-                        explanation: $"{square.Index} is the only position which can accept {number} ({additionalInfo})",
+                        explanation: $"{square.Index} is the unique candidate for {number} ({additionalInfo})",
                         difficulty: Difficulty.Medium);
                     mediumSolvable.Add(solution);
                     // Console.WriteLine(solution.Explanation);

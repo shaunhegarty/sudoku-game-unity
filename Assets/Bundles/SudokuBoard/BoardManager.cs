@@ -10,6 +10,7 @@ public class BoardManager : MonoBehaviour
     public SudokuSquare squarePrefab;
     private BoxCollider squareCollider;
     public TMP_Dropdown numberDropdown;
+    public TMP_Text infoText;
 
     // Position Settings
     public float spacing = 0.1f;
@@ -34,7 +35,7 @@ public class BoardManager : MonoBehaviour
 
     private void SetupInternalBoard()
     {
-        internalGame = Sudoku.Game.DefaultGame();
+        internalGame = Sudoku.Game.VeryHardGame();
         internalGame.BuildBoard();
 
         internalSolver = new(internalGame);
@@ -79,8 +80,11 @@ public class BoardManager : MonoBehaviour
     private void MatchSquareToInternal(SudokuSquare square, bool fixValue = false)
     {
         Sudoku.Position position = Vector2Position(square.Index);
-        var number = internalGame.GetNumber(position);
+        var internalSquare = internalGame.GetSquare(position);
+        var number = internalSquare.Number;
         square.SetNumber(number);
+        square.SetInternalSquare(internalSquare);
+        
 
         if (number != 0 && fixValue)
         {
@@ -89,6 +93,7 @@ public class BoardManager : MonoBehaviour
         }
 
         var solution = internalSolver.GetBestAvailableSolution(position);
+        square.SetSolution(solution);
         if (square.Number == 0)
         {
             square.difficulty = solution.Number != 0 ? solution.Difficulty : Sudoku.Difficulty.None;                        
@@ -152,6 +157,26 @@ public class BoardManager : MonoBehaviour
         Debug.Log(internalGame);
     }
 
+    public void ShowWhereNumberIsAllowed(int number)
+    {
+        var allSquares = from row in sudokuSquares
+                         from square in row
+                         select square;
+        foreach(SudokuSquare square in allSquares)
+        {
+            square.HidePossibleNumber();
+        }
+
+        var availableSquares = from row in sudokuSquares
+                               from square in row
+                               where !square.fixedNumber && square.Number == 0
+                               select square;
+        foreach (SudokuSquare square in availableSquares)
+        {
+            square.ShowPossibleNumber(number);            
+        }
+    }
+
     public void SetActiveSquare(SudokuSquare square)
     {
         bool sameSquare = false;
@@ -187,8 +212,12 @@ public class BoardManager : MonoBehaviour
             activeSquare.SetNumber(number);
             Deselect();
             UpdateBoard();            
-        }
-        
+        }        
+    }
+
+    public void UpdateInfoText(string text)
+    {
+        infoText.text = text;
     }
 
 

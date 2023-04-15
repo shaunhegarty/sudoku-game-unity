@@ -36,6 +36,7 @@ public class MaterialChangeOnHighlight : MonoBehaviour
         {
             baseRenderer.material = hoverMaterial;
         }
+        GameManager.Instance.Board.UpdateInfoText(square.InfoText());        
     }
 
     private void OnMouseExit()
