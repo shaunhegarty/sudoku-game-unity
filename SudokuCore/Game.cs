@@ -571,6 +571,24 @@ namespace Sudoku
             // First Pass, identify candidates based on current row, column and region placement, 
             IEnumerable<Square> emptySquares = from square in game.AllSquares() where square.Number == 0 select square;
 
+            void FindSoleCandidates(Difficulty difficulty)
+            {
+                foreach (Square square in emptySquares)
+                {
+                    var allowed = square.AllowedNumbers;
+
+                    if (allowed.Count == 1)
+                    {
+                        Solution solution = new Solution(
+                            number: square.AllowedNumbers.ElementAt(0),
+                            index: square.Index,
+                            explanation: $"{square.Index} has sole candidate number: {square.AllowedNumbers.ElementAt(0)}",
+                            difficulty: Difficulty.Easy);
+                        simpleSolvable.Add(solution);
+                    }
+                }
+            }
+
 
             foreach (Square square in emptySquares)
             {
@@ -578,35 +596,64 @@ namespace Sudoku
 
                 var allowed = DetermineAllowedNumbersForSquare(square.Index);
                 square.AllowNumbers(allowed);
-
-                if (allowed.Count == 1)
-                {
-                    Solution solution = new Solution(
-                        number: square.AllowedNumbers.ElementAt(0),
-                        index: square.Index,
-                        explanation: $"{square.Index} has sole candidate number: {square.AllowedNumbers.ElementAt(0)}",
-                        difficulty: Difficulty.Easy);
-                    simpleSolvable.Add(solution);
-                }
             }
+
+            FindSoleCandidates(Difficulty.Easy);
 
             // Methods to remove candidates
             // https://www.kristanix.com/sudokuepic/sudoku-solving-techniques.php
 
-            TrimCandidatesUsingBlockRowInteraction();
-            /*var position = Position.New(0, 0);
-            var allowedNumbers = GetAllowedNumbersForSquare(position);
-            Console.WriteLine($"Allowed for {position}: {string.Join(" ", allowedNumbers)} (After Block-Row)");            */
+            var count = from square in emptySquares
+                        from number in square.AllowedNumbers
+                        select number;
+            int noOfCandidates = count.Count();
+            bool candidateCountChanged = true;
+            int tries = 0;
+            while(candidateCountChanged && tries < 10)            
+            {
+                TrimCandidatesUsingBlockRowInteraction();
+                TrimCandidatesUsingBlockBlockInteraction();
+                TrimCandidatesUsingNakedSubsets();
+                FindSoleCandidates(Difficulty.Medium);
 
-            TrimCandidatesUsingBlockBlockInteraction();
-            /* allowedNumbers = GetAllowedNumbersForSquare(position);
-            Console.WriteLine($"Allowed for {position}: {string.Join(" ", allowedNumbers)} (After Block-Block)");*/            
+                int newCount = count.Count();
+                Console.WriteLine($"Number of Candidates: {newCount}");
+                candidateCountChanged = noOfCandidates != newCount;
+                noOfCandidates = newCount;
+                tries++;
+            }
+
 
             SolutionsForUniqueCandidates(simpleSolvable, mediumSolvable);
 
             // PrintSolutions();
             MapSolutionByIndex();
 
+        }
+
+        public void TrimCandidatesUsingNakedSubsets()
+        {
+            foreach(List<Region> regionGroup in new List<List<Region>> { game.Rows, game.Columns, game.Blocks })
+            {
+                foreach (Region region in regionGroup)
+                {
+                    // Find a naked subset
+                    var subsets = region.Squares
+                        .Where(square => square.Number == 0)
+                        .GroupBy(square => square.AllowedNumbers, HashSet<int>.CreateSetComparer());
+
+                    var numbersToDisallow = from allowedNumberSquareSet in subsets
+                                            where allowedNumberSquareSet.Count() == allowedNumberSquareSet.Key.Count
+                                            from Square square in region.Squares
+                                            where !allowedNumberSquareSet.Contains(square)
+                                            select (allowedNumberSquareSet, square);
+
+                    foreach (var (allowedNumberSquareSet, square) in numbersToDisallow)
+                    {
+                        square.DisallowNumbers(allowedNumberSquareSet.Key);
+                    }
+                }
+            }
         }
 
         private void SolutionsForUniqueCandidates(HashSet<Solution> simpleSolvable, HashSet<Solution> mediumSolvable)

@@ -223,7 +223,7 @@ namespace SudokuUnitTest
             solver.SolveBoard();
 
             solver.PrintSolutions();
-            Assert.AreEqual(4, solver.GetSolvedNumberForIndex(8, 4));
+            Assert.AreEqual(4, solver.GetSolvedNumberForIndex(7, 4));
         }
 
         [TestMethod]
@@ -282,6 +282,32 @@ namespace SudokuUnitTest
             var allowedNumbers = solver.Game.GetSquare(position).AllowedNumbers;
             Console.WriteLine($"Allowed for {position}: {string.Join(" ", allowedNumbers)}");
             Assert.IsFalse(allowedNumbers.Contains(8));
+        }
+
+        [TestMethod]
+        public void TestRemoveCandidatesViaNakedSubsets()
+        {
+            List<List<int>> numbers = new List<List<int>>() {
+                new List<int>() { 0, 0, 1, 7, 0, 3, 9, 5, 0 },
+                new List<int>() { 0, 0, 0, 0, 0, 9, 0, 7, 1 },
+                new List<int>() { 0, 0, 7, 0, 0, 0, 3, 4, 8 },
+                new List<int>() { 2, 0, 0, 0, 7, 4, 1, 0, 0 },
+                new List<int>() { 0, 7, 0, 0, 3, 0, 4, 0, 0 },
+                new List<int>() { 4, 0, 3, 0, 0, 0, 7, 0, 0 },
+                new List<int>() { 0, 0, 0, 0, 0, 7, 0, 9, 0 },
+                new List<int>() { 5, 6, 0, 3, 0, 2, 8, 1, 7 },
+                new List<int>() { 7, 0, 8, 0, 0, 1, 5, 0, 4 },
+            };
+
+            Game game = new Game(numbers);
+            game.BuildBoard();
+
+            Console.WriteLine(game.ToString());
+
+            Solver solver = new Solver(game);
+            solver.SolveBoard();
+
+            solver.TrimCandidatesUsingNakedSubsets();
         }
 
 
