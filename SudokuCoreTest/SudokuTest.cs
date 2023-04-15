@@ -127,6 +127,8 @@ namespace SudokuUnitTest
             game.SetNumber(0, 2, 5);
             game.SetNumber(3, 3, 6);
 
+            solver.SolveBoard();
+
             Console.WriteLine(game.ToString());
 
             IEnumerable<int> allowedNumbers = solver.GetAllowedNumbersForSquare(0, 3);
@@ -224,21 +226,50 @@ namespace SudokuUnitTest
             Assert.AreEqual(4, solver.GetSolvedNumberForIndex(8, 4));
         }
 
+        [TestMethod]
+        public void TestRemoveCandidatesViaBlockRowColumnInteraction()
+        {
+            List<List<int>> numbers = new List<List<int>>() {
+                new List<int>() { 0, 0, 0, 0, 7, 0, 0, 0, 0 },
+                new List<int>() { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+                new List<int>() { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+                new List<int>() { 0, 0, 0, 2, 0, 1, 0, 0, 0 },
+                new List<int>() { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+                new List<int>() { 0, 0, 0, 9, 0, 6, 0, 0, 0 },
+                new List<int>() { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+                new List<int>() { 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+                new List<int>() { 0, 0, 8, 0, 0, 0, 0, 0, 0 },
+            };
+
+            Game game = new Game(numbers);
+            game.BuildBoard();
+
+            Console.WriteLine(game.ToString());
+
+            Solver solver = new Solver(game);
+            solver.SolveBoard();
+
+            Position position = new Position(4, 6);
+            var allowedNumbers = solver.Game.GetSquare(position).AllowedNumbers;
+            Console.WriteLine(string.Join(" ", allowedNumbers));
+            Assert.IsFalse(allowedNumbers.Contains(7));            
+        }
+
 
 
         [TestMethod]
         public void TestReversability()
         {
             List<List<int>> numbers = new List<List<int>>() {
-                new List<int>() { 0, 0, 9, 2, 0, 8, 0, 0, 7 },
-                new List<int>() { 2, 8, 0, 9, 0, 7, 4, 3, 6 },
-                new List<int>() { 0, 3, 7, 5, 0, 0, 2, 9, 8 },
-                new List<int>() { 0, 4, 3, 6, 0, 1, 0, 0, 0 },
-                new List<int>() { 8, 7, 0, 0, 5, 2, 0, 0, 9 },
-                new List<int>() { 0, 2, 0, 8, 7, 0, 1, 5, 0 },
-                new List<int>() { 7, 1, 8, 3, 0, 0, 9, 0, 5 },
-                new List<int>() { 3, 0, 0, 7, 8, 0, 0, 0, 1 },
-                new List<int>() { 0, 5, 2, 1, 4, 0, 0, 8, 3 },
+                new List<int>() { 0, 0, 1, 7, 0, 3, 0, 5, 0 },
+                new List<int>() { 0, 0, 0, 0, 0, 9, 0, 7, 0 },
+                new List<int>() { 0, 0, 0, 0, 0, 0, 3, 0, 8 },
+                new List<int>() { 2, 0, 0, 0, 0, 0, 1, 0, 0 },
+                new List<int>() { 0, 7, 0, 0, 0, 0, 4, 0, 0 },
+                new List<int>() { 4, 0, 3, 0, 0, 0, 0, 0, 0 },
+                new List<int>() { 0, 0, 0, 0, 0, 7, 0, 9, 0 },
+                new List<int>() { 5, 6, 0, 3, 0, 2, 0, 0, 0 },
+                new List<int>() { 0, 0, 8, 0, 0, 1, 5, 0, 4 },
             };
 
             Game game = new Game(numbers);
@@ -250,19 +281,21 @@ namespace SudokuUnitTest
             solver.SolveBoard();
 
             solver.PrintSolutions();
-            Position positon = new Position(2, 0);
-            Assert.AreEqual(0, solver.GetSolvedNumberForIndex(positon));
-            Assert.AreEqual(0, solver.GetBestAvailableSolution(positon).Number);
+            Position position = new Position(1, 8);
+            Console.WriteLine($"\n{string.Join(" ", solver.GetAllowedNumbersForSquare(position))}");
+            Assert.AreEqual(0, solver.GetSolvedNumberForIndex(position));
+            Assert.AreEqual(0, solver.GetBestAvailableSolution(position).Number);
 
-            solver.SetNumber(1, 4, number: 1);
+            solver.SetNumber(2, 7, number: 4);            
             solver.SolveBoard();
-            Assert.AreEqual(1, solver.GetSolvedNumberForIndex(positon));
-            Assert.AreEqual(1, solver.GetBestAvailableSolution(positon).Number);
+            Console.WriteLine(game.ToString());
+            Assert.AreEqual(1, solver.GetSolvedNumberForIndex(position));
+            Assert.AreEqual(1, solver.GetBestAvailableSolution(position).Number);
 
-            solver.SetNumber(1, 4, number: 0);
+            solver.SetNumber(2, 7, number: 0);
             solver.SolveBoard();
-            Assert.AreEqual(0, solver.GetSolvedNumberForIndex(positon));
-            Assert.AreEqual(0, solver.GetBestAvailableSolution(positon).Number);
+            Assert.AreEqual(0, solver.GetSolvedNumberForIndex(position));
+            Assert.AreEqual(0, solver.GetBestAvailableSolution(position).Number);
 
             solver.PrintSolutions();
         }

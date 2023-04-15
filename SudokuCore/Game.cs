@@ -507,11 +507,22 @@ namespace Sudoku
         }
 
         public HashSet<int> GetAllowedNumbersForSquare(Position position)
-        {
+        {            
             return GetAllowedNumbersForSquare(position.x, position.y);
         }
 
-        public HashSet<int> GetAllowedNumbersForSquare(int row, int col)
+        public HashSet<int> GetAllowedNumbersForSquare(int row, int column)
+        {
+            return Game.GetSquare(row, column).AllowedNumbers;
+        }
+
+
+        private HashSet<int> DetermineAllowedNumbersForSquare(Position position)
+        {
+            return DetermineAllowedNumbersForSquare(position.x, position.y);
+        }
+
+        private HashSet<int> DetermineAllowedNumbersForSquare(int row, int col)
         {
             HashSet<int> allowed = new HashSet<int>();
             HashSet<int> allowedByRow = new HashSet<int>();
@@ -545,7 +556,7 @@ namespace Sudoku
 
         public void SolveSquare(int x, int y)
         {
-            var allowed = GetAllowedNumbersForSquare(x, y);
+            var allowed = DetermineAllowedNumbersForSquare(x, y);
             if(allowed.Count == 1)
             {
                 SetNumber(x, y, allowed.ElementAt(0));
@@ -560,29 +571,39 @@ namespace Sudoku
             // First Pass, identify candidates based on current row, column and region placement, 
             IEnumerable<Square> emptySquares = from square in game.AllSquares() where square.Number == 0 select square;
 
-            
+
             foreach (Square square in emptySquares)
             {
                 square.ClearAllowedNumbers();
 
-                var allowed = GetAllowedNumbersForSquare(square.Index);
+                var allowed = DetermineAllowedNumbersForSquare(square.Index);
                 square.AllowNumbers(allowed);
 
-                if(allowed.Count == 1)
+                if (allowed.Count == 1)
                 {
                     Solution solution = new Solution(
-                        number: square.AllowedNumbers.ElementAt(0), 
-                        index: square.Index, 
-                        explanation: $"{square.Index} has sole candidate number: {square.AllowedNumbers.ElementAt(0)}", 
+                        number: square.AllowedNumbers.ElementAt(0),
+                        index: square.Index,
+                        explanation: $"{square.Index} has sole candidate number: {square.AllowedNumbers.ElementAt(0)}",
                         difficulty: Difficulty.Easy);
-                    simpleSolvable.Add(solution);                    
+                    simpleSolvable.Add(solution);
                 }
             }
 
             // Methods to remove candidates
             // https://www.kristanix.com/sudokuepic/sudoku-solving-techniques.php
 
+            TrimCandidatesUsingBlockRowInteraction();
 
+            SolutionsForUniqueCandidates(simpleSolvable, mediumSolvable);
+
+            // PrintSolutions();
+            MapSolutionByIndex();
+
+        }
+
+        private void SolutionsForUniqueCandidates(HashSet<Solution> simpleSolvable, HashSet<Solution> mediumSolvable)
+        {
             // Second Pass, identify if square is only square within a region which may permit a certain number
             // get empty squares in row (i.e. where the number is 0)
             // for each unsolved number, count the number of squares for which it is allowed, if it is only 1, then the square is solved
@@ -605,10 +626,57 @@ namespace Sudoku
 
             solutions.AddRange(simpleSolvable);
             solutions.AddRange(mediumSolvable);
+        }
 
-            // PrintSolutions();
-            MapSolutionByIndex();
-                
+        private void TrimCandidatesUsingBlockRowInteraction()
+        {
+            // Block and Column/Row interaction
+            // Find out if candidates within a block are limited to a single row or column
+            foreach (Region region in game.Regions)
+            {
+                var solvedNumbers = from square in region.Squares where square.Number > 0 select square.Number;
+                var remainingSquares = from square in region.Squares where square.Number == 0 select square;
+                for(int i = 1; i <= region.Squares.Count; i++)
+                {
+                    if(solvedNumbers.Contains(i))
+                    {
+                        continue;
+                    }
+
+                    var columnsForCandidate = new HashSet<int>();
+                    var rowsForCandidate = new HashSet<int>();
+                    foreach (Square square in remainingSquares)
+                    {
+                        if (square.AllowedNumbers.Contains(i))
+                        {
+                            columnsForCandidate.Add(square.Column);
+                            rowsForCandidate.Add(square.Row);
+                        }
+                    }
+
+                    if (columnsForCandidate.Count == 1)
+                    {
+                        var column = game.GetColumn(columnsForCandidate.ElementAt(0));
+                        // Remove candidate from squares not in region
+                        var remainingColumnSquares = from square in column where !remainingSquares.Contains(square) select square;
+                        foreach (Square square in remainingColumnSquares)
+                        {
+                            square.DisallowNumber(i);
+                        }
+                    }
+
+                    if (rowsForCandidate.Count == 1)
+                    {
+                        var row = game.GetRow(rowsForCandidate.ElementAt(0));
+                        // Remove candidate from squares not in region
+                        var remainingRowSquares = from square in row where !remainingSquares.Contains(square) select square;
+                        foreach (Square square in remainingRowSquares)
+                        {
+                            square.DisallowNumber(i);
+                        }
+                    }
+                }
+            }
         }
 
         private void MapSolutionByIndex()
