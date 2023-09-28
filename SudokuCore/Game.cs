@@ -609,11 +609,13 @@ namespace Sudoku
             int noOfCandidates = count.Count();
             bool candidateCountChanged = true;
             int tries = 0;
-            while(candidateCountChanged && tries < 10)            
+            // high try numbers actually just solve the whole board which isn't very interesting for someone trying to understand           
+            while (candidateCountChanged && tries < 1) 
             {
                 TrimCandidatesUsingBlockRowInteraction();
                 TrimCandidatesUsingBlockBlockInteraction();
                 TrimCandidatesUsingNakedSubsets();
+                TrimCandidatesUsingHiddenSubsets();
                 FindSoleCandidates(Difficulty.Medium);
 
                 int newCount = count.Count();
@@ -629,6 +631,13 @@ namespace Sudoku
             // PrintSolutions();
             MapSolutionByIndex();
 
+        }
+
+        private void TrimCandidatesUsingHiddenSubsets()
+        {
+            var row = game.Rows[0];
+
+            throw new NotImplementedException();
         }
 
         public void TrimCandidatesUsingNakedSubsets()
